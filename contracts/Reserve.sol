@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "./BancorZeroFormula.sol";
 import "./IBondingCurveToken.sol";
 
-/// @title Vault
-/// @author Carl Farterson (@carlfarterson) && Chris Robison (@cbobrobison)
-contract Vault is BancorZeroFormula {
+/// @title Reserve
+/// @author Joshua Healey (@alpinelines) - Credit to: Carl Farterson (@carlfarterson) && Chris Robison (@cbobrobison)
+contract Reserve is BancorZeroFormula {
 
     uint256 constant PRECISION = 10**18;
 
