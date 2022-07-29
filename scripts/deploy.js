@@ -24,7 +24,11 @@ async function main() {
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   const Token = await ethers.getContractFactory("Token");
+
   const token = await Token.deploy();
+  await token.deployed();
+
+  console.log("Token address:", token.address);
 
   const Reserve = await ethers.getContractFactory("Reserve");
 
@@ -34,6 +38,9 @@ async function main() {
     process.env.CONNECTOR_WEIGHT,
     process.env.BASE_Y
   );
+  await reserve.deployed();
+
+  console.log("Reserve address:", reserve.address);
 
   const TimelockController = await ethers.getContractAt("TimelockController");
 
@@ -42,6 +49,9 @@ async function main() {
     process.env.PROPOSERS,
     process.env.EXECUTORS
   );
+  await timelock.deployed();
+
+  console.log("Timelock address:", timelock.address);
 
   const BondingGovernor = await ethers.getContractFactory("BondingGovernor");
 
@@ -49,10 +59,9 @@ async function main() {
     token.address,
     timelock.address
   );
+  await governor.deployed();
 
-  await token.deployed();
-
-  console.log("Token address:", token.address);
+  console.log("Governor address:", governor.address);
 
   // We also save the contract's artifacts and address in the frontend directory
   saveFrontendFiles(token);
@@ -60,22 +69,49 @@ async function main() {
 
 function saveFrontendFiles(token) {
   const fs = require("fs");
-  const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
 
-  if (!fs.existsSync(contractsDir)) {
-    fs.mkdirSync(contractsDir);
+  const deploymentsDir = path.join(__dirname, "deployments");
+
+  if (!fs.existsSync(deploymentsDir)) {
+    fs.mkdirSync(deploymentsDir);
   }
 
   fs.writeFileSync(
-    path.join(contractsDir, "contract-address.json"),
-    JSON.stringify({ Token: token.address }, undefined, 2)
+    path.join(deploymentsDir, "deployments.json"),
+    JSON.stringify({ 
+      Token: token.address,
+      Reserve: reserve.address,
+      Timelock: timelock.address,
+      Governor: governor.address
+    }, undefined, 2)
   );
 
   const TokenArtifact = artifacts.readArtifactSync("Token");
 
   fs.writeFileSync(
-    path.join(contractsDir, "Token.json"),
+    path.join(deploymentsDir, "Token.json"),
     JSON.stringify(TokenArtifact, null, 2)
+  );
+
+  const ReserveArtifact = artifacts.readArtifactSync("Reserve");
+
+  fs.writeFileSync(
+    path.join(deploymentsDir, "Reserve.json"),
+    JSON.stringify(ReserveArtifact, null, 2)
+  );
+
+  const TimelockArtifact = artifacts.readArtifactSync("Timelock");
+
+  fs.writeFileSync(
+    path.join(deploymentsDir, "Timelock.json"),
+    JSON.stringify(TimelockArtifact, null, 2)
+  );
+
+  const GovernorArtifact = artifacts.readArtifactSync("Governor");
+
+  fs.writeFileSync(
+    path.join(deploymentsDir, "Governor.json"),
+    JSON.stringify(GovernorArtifact, null, 2)
   );
 }
 
