@@ -1,8 +1,8 @@
 {
-  "name": "bonding-curve-token",
+  "name": "bonding-governor",
   "version": "1.0.0",
-  "description": "",
-  "main": "truffle-config.js",
+  "description": "An OpenZeppelin Governor implementation utilizing the Bancor Zero Formula to operate a Reserve (automated market maker) for an ERC20 token.",
+  "main": "hardhat.config.js",
   "directories": {
     "test": "test"
   },
@@ -10,7 +10,7 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "node": "hardhat node",
-    "deploy:dev": "hardhat deploy --network=development",
+    "deploy": "node deploy.js",
     "console": "hardhat console"
   },
   "author": "",

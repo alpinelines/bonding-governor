@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title Token
+/// @author Joshua Healey (@alpinelines) - Credit to: Carl Farterson (@carlfarterson) && Chris Robison (@cbobrobison)
 contract Token is ERC20, ERC20Burnable, ERC20Votes, AccessControl {
     string public version;
 

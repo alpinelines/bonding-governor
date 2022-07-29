@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./utils/ABDKMathQuad.sol";
 
 /// @title Bancor Zero Formula
-/// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Benjamin (@zgorizzo69)
+/// @author Joshua Healey (@alpinelines) - Credit to: Carl Farterson (@carlfarterson) && Chris Robison (@cbobrobison)
 contract BancorZeroFormula {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;

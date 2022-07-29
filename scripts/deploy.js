@@ -1,6 +1,7 @@
 // This is a script for deploying your contracts. You can adapt it to deploy
 // yours, or create new ones.
 
+const { ethers } = require("hardhat");
 const path = require("path");
 
 async function main() {
@@ -24,6 +25,31 @@ async function main() {
 
   const Token = await ethers.getContractFactory("Token");
   const token = await Token.deploy();
+
+  const Reserve = await ethers.getContractFactory("Reserve");
+
+  const reserve = await Reserve.deploy(
+    token.address,
+    process.env.COLLATERAL,
+    process.env.CONNECTOR_WEIGHT,
+    process.env.BASE_Y
+  );
+
+  const TimelockController = await ethers.getContractAt("TimelockController");
+
+  const timelock = GovernorTimelockControl.deploy(
+    process.env.MIN_DELAY,
+    process.env.PROPOSERS,
+    process.env.EXECUTORS
+  );
+
+  const BondingGovernor = await ethers.getContractFactory("BondingGovernor");
+
+  const governor = await BondingGovernor.deploy(
+    token.address,
+    timelock.address
+  );
+
   await token.deployed();
 
   console.log("Token address:", token.address);
