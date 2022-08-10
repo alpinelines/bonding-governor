@@ -34,7 +34,6 @@ async function main() {
 
   const reserve = await Reserve.deploy(
     token.address,
-    process.env.COLLATERAL,
     process.env.CONNECTOR_WEIGHT,
     process.env.BASE_Y
   );

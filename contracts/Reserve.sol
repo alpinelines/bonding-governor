@@ -1,81 +1,120 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "./BancorZeroFormula.sol";
-import "./IBondingCurveToken.sol";
+import "./BancorFormula.sol";
+import "./Token.sol";
+// import "./utils/ABDKMathQuad.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @title Reserve
 /// @author Joshua Healey (@alpinelines) - Credit to: Carl Farterson (@carlfarterson) && Chris Robison (@cbobrobison)
-contract Reserve is BancorZeroFormula {
+contract Reserve is BancorFormula {
 
-    uint256 constant PRECISION = 10**18;
+    using Address for address;
+
+    uint256 private constant PRECISION= 10**18;
+
+    /// @dev Reserve address
+    address private immutable reserve; 
 
     /// @dev Token issued by the bonding curve
-    IBondingCurveToken immutable token;
+    Token private immutable token;
     /// @dev Token used as collateral for minting/burning the Token issued by the bonding curve
-    IBondingCurveToken immutable collateral;
+    // Token private immutable collateral;
+    /// @dev Formula contract
+    // BancorZeroFormula private immutable formula;
 
     /// @dev The ratio of how much collateral "backs" the total marketcap of the Token (eg, creates the shape of the curve)
-    uint32 immutable connectorWeight;
+    uint32 public immutable connectorWeight;
     /// @dev The intersecting price to mint or burn a Token when supply == PRECISION (eg, creates the slope of the curve)
-    uint256 immutable baseY;
+    uint256 public immutable baseY;
 
     /// @dev The amount of collateral "backing" the total marketcap of the Token
-    uint256 connectorBalance = 0;
+    uint256 public connectorBalance = 0;
+
+    bool private active = false;
 
     constructor(
-        IBondingCurveToken _token,
-        IBondingCurveToken _collateral,
+        Token _token,
         uint32 _connectorWeight,
         uint256 _baseY
-    ) {
-        require(_connectorWeight <= 1000000 && _connectorWeight > 0);
+    ) payable {
+        require(_connectorWeight <= 1000000 && _connectorWeight > 0 && msg.value > 0);
+        reserve = address(this);
+        connectorBalance += msg.value;
         token = _token;
-        collateral = _collateral;
         connectorWeight = _connectorWeight;
         baseY = _baseY;
     }
 
-    function sell(
-        uint256 _collateralDeposited,
-        address _recipient
-    ) external returns (uint256 tokensReturned) {
+    receive () external payable {
         uint256 supply = token.totalSupply();
-        if (supply > 0) {
-            tokensReturned = _calculatePurchaseReturn(
-                _collateralDeposited,
-                connectorWeight,
-                supply,
-                connectorBalance
-            );
-        } else {
-            tokensReturned = _calculatePurchaseReturnFromZero(
-                _collateralDeposited,
-                connectorWeight,
-                PRECISION,
-                baseY
-            );
-        }
 
-        connectorBalance += _collateralDeposited;
-        collateral.transferFrom(msg.sender, address(this), _collateralDeposited);
-        token.mint(_recipient, tokensReturned);
-    }
-
-    function buy(
-        uint256 _tokensBurned,
-        address _recipient
-    ) external returns (uint256 collateralReturned) {
-        uint256 supply = token.totalSupply();
-        collateralReturned = _calculateSaleReturn(
-            _tokensBurned,
-            connectorWeight,
+        uint256 tokensReturned = calculatePurchaseReturn(
             supply,
-            connectorBalance
+            connectorBalance,
+            connectorWeight,
+            msg.value
         );
 
-        connectorBalance -= collateralReturned;
-        token.burn(msg.sender, _tokensBurned);
-        collateral.transferFrom(address(this), _recipient, collateralReturned);
+        require(tokensReturned != 0, "#buy(): not enough ether.");
+
+        connectorBalance += msg.value;
+
+        token.mint(msg.sender, tokensReturned);
+        
+        payable(msg.sender).transfer(
+            msg.value - calculateSaleReturn(
+                supply + tokensReturned,
+                connectorBalance,
+                connectorWeight,
+                tokensReturned
+            )
+        );
+    }
+
+    function buy() public payable returns (uint256 tokensReturned) {
+        uint256 supply = token.totalSupply();
+
+        tokensReturned = calculatePurchaseReturn(
+            supply,
+            connectorBalance,
+            connectorWeight,
+            msg.value
+        );
+
+        connectorBalance += msg.value;
+
+        token.mint(msg.sender, tokensReturned);
+        
+        payable(msg.sender).transfer(
+            msg.value - calculateSaleReturn(
+                supply + tokensReturned,
+                connectorBalance,
+                connectorWeight,
+                tokensReturned
+            )
+        );
+
+        return tokensReturned;
+    }
+
+    function sell(
+        uint256 tokensBurned
+    ) external payable returns (uint256 valueReturned) {
+        uint256 supply = token.totalSupply();
+
+        valueReturned = calculateSaleReturn(
+            supply,
+            connectorBalance,
+            connectorWeight,
+            tokensBurned
+        );
+
+        connectorBalance -= valueReturned;
+        
+        token.burn(msg.sender, tokensBurned);
+
+        payable(msg.sender).transfer(valueReturned);
     }
 }
